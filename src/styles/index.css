@@ -1,0 +1,316 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* eGov.ph Modern Clean Palette */
+  --primary-blue: #0066FF;
+  --primary-blue-dark: #0052CC;
+  --primary-blue-light: #2563EB;
+  --secondary-red: #CE1126;
+  --secondary-red-dark: #9E0A1B;
+  --accent-gold: #FCD116;
+  --accent-gold-dark: #D4A903;
+  
+  /* Modern Neutral System */
+  --bg-main: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-surface-alt: #F8FAFC;
+  --border-color: #E2E8F0;
+  --border-focus: #0066FF;
+  
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  
+  /* State Accents */
+  --success: #10B981;
+  --success-bg: #ECFDF5;
+  --warning: #F59E0B;
+  --warning-bg: #FFFBEB;
+  --danger: #EF4444;
+  --danger-bg: #FEF2F2;
+  --info: #0066FF;
+  --info-bg: #EFF6FF;
+
+  /* Shadows & Glass */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 14px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.06);
+  --shadow-xl: 0 20px 35px -5px rgba(0, 0, 0, 0.08);
+  --shadow-blue: 0 6px 20px -2px rgba(0, 102, 255, 0.25);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--primary-blue-dark);
+}
+
+a {
+  color: var(--primary-blue);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input, select, textarea {
+  font-family: inherit;
+  outline: none;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-lg);
+}
+
+.glass-panel-dark {
+  background: rgba(0, 38, 100, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(252, 209, 22, 0.25);
+  box-shadow: 0 15px 35px rgba(0, 20, 60, 0.4);
+  color: #FFFFFF;
+}
+
+/* Philippine Tricolor Accent Header */
+.ph-banner-strip {
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    var(--primary-blue) 0%,
+    var(--primary-blue) 45%,
+    var(--accent-gold) 45%,
+    var(--accent-gold) 55%,
+    var(--secondary-red) 55%,
+    var(--secondary-red) 100%
+  );
+  width: 100%;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(252, 209, 22, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(252, 209, 22, 0.7);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s infinite;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #E2E8F0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94A3B8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-pending {
+  background-color: var(--warning-bg);
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.badge-approved {
+  background-color: var(--success-bg);
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.badge-rejected {
+  background-color: var(--danger-bg);
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+}
+
+/* Buttons */
+.btn-primary {
+  background: var(--primary-blue);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-blue);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -2px rgba(0, 102, 255, 0.35);
+}
+
+.btn-pill {
+  border-radius: var(--radius-pill);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #FCD116 0%, #E5B800 100%);
+  color: #002664;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(252, 209, 22, 0.3);
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, #FFE047 0%, #FCD116 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(252, 209, 22, 0.45);
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: #1E293B;
+  border: 1px solid var(--border-color);
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-surface-alt);
+  border-color: #CBD5E1;
+  color: var(--primary-blue);
+}
+
+.btn-danger {
+  background: var(--secondary-red);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-danger:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+/* eGov UI Components */
+.egov-nav-link {
+  color: #374151;
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.egov-nav-link:hover {
+  color: var(--primary-blue);
+}
+
+.step-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.step-card-hover:hover {
+  transform: translateY(-4px);
+}
+
+.trust-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 1.75rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trust-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: #BFDBFE;
+}
+
