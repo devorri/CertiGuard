@@ -353,6 +353,20 @@ export const supabaseDataService = {
       const { error } = await supabase.from('certificate_requests').insert(dbPayload);
       if (error) {
         console.error('Supabase insertRequest error:', error.message);
+        // Fallback retry if new payment columns don't exist in live Supabase DB schema yet
+        if (error.message.includes('payment_') || error.message.includes('column') || error.code === '42703') {
+          console.warn('Retrying request insert without optional payment columns...');
+          const fallbackPayload: any = { ...dbPayload };
+          delete fallbackPayload.payment_status;
+          delete fallbackPayload.payment_method;
+          delete fallbackPayload.payment_ref;
+          const { error: retryErr } = await supabase.from('certificate_requests').insert(fallbackPayload);
+          if (!retryErr) {
+            await supabaseDataService.logAudit(req.userId, `Submitted application ${req.controlNumber} (${req.type})`);
+            return true;
+          }
+          console.error('Fallback request insert error:', retryErr.message);
+        }
         return false;
       }
       await supabaseDataService.logAudit(req.userId, `Submitted application ${req.controlNumber} (${req.type})`);
