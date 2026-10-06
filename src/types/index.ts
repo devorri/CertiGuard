@@ -51,6 +51,9 @@ export interface CertificateRequest {
   certificateId?: string;
   orNumber?: string; // Official receipt / tracking
   feeAmount?: number;
+  paymentStatus?: 'unpaid' | 'paid' | 'exempted';
+  paymentMethod?: 'gcash' | 'maya' | 'bank_transfer' | 'cash';
+  paymentRef?: string;
 }
 
 export interface IssuedCertificate {

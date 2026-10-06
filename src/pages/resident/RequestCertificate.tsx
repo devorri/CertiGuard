@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { certificateService } from '../../services/certificateService';
 import type { CertificateType } from '../../types';
+import type { PaymentMethod } from '../../components/ui/PaymentModal';
+import { PaymentModal } from '../../components/ui/PaymentModal';
 import { FileCheck, Award, Users, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import barangayLogo from '../../assets/barangay-logo.png';
 import toast from 'react-hot-toast';
@@ -16,8 +18,11 @@ export const RequestCertificate: React.FC = () => {
   const [yearsOfResidency, setYearsOfResidency] = useState<number>(3);
   const [emergencyContact, setEmergencyContact] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const feeAmount = certType === 'indigency' ? 0 : 50;
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -26,14 +31,24 @@ export const RequestCertificate: React.FC = () => {
       return;
     }
 
+    // Open the payment modal instead of directly submitting
+    setShowPayment(true);
+  };
+
+  const handlePaymentComplete = async (method: PaymentMethod, refNumber: string) => {
+    if (!user) return;
+    setShowPayment(false);
     setIsSubmitting(true);
+
     try {
       const newReq = await certificateService.submitRequest(
         user.id,
         certType,
         purpose.trim(),
         yearsOfResidency,
-        emergencyContact
+        emergencyContact,
+        method,
+        refNumber
       );
 
       toast.success(`Application submitted! Tracking Ref: ${newReq.controlNumber}`);
@@ -278,6 +293,34 @@ export const RequestCertificate: React.FC = () => {
             </div>
           </div>
 
+          {/* Fee Summary + Payment Notice */}
+          <div
+            style={{
+              background: feeAmount > 0 ? '#EFF6FF' : '#ECFDF5',
+              border: `1px solid ${feeAmount > 0 ? '#BFDBFE' : '#A7F3D0'}`,
+              borderRadius: '10px',
+              padding: '14px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                Certificate Fee
+              </div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: feeAmount > 0 ? '#0066FF' : '#059669' }}>
+                {feeAmount > 0 ? `₱${feeAmount.toFixed(2)}` : 'FREE'}
+              </div>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#475569', textAlign: 'right', maxWidth: '220px' }}>
+              {feeAmount > 0
+                ? 'Payment via GCash, Maya, Bank Transfer, or Cash will be required upon submission.'
+                : 'Indigency certificates are exempted from processing fees.'}
+            </div>
+          </div>
+
           {/* Academic Prototype Notice */}
           <div
             style={{
@@ -311,12 +354,22 @@ export const RequestCertificate: React.FC = () => {
               className="btn-primary"
               style={{ padding: '12px 28px' }}
             >
-              <span>{isSubmitting ? 'Submitting to Ledger...' : 'Submit Official Application'}</span>
+              <span>{isSubmitting ? 'Submitting to Ledger...' : feeAmount > 0 ? 'Proceed to Payment' : 'Submit Application'}</span>
               <ArrowRight size={18} />
             </button>
           </div>
         </form>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPayment}
+        onClose={() => setShowPayment(false)}
+        onPaymentComplete={handlePaymentComplete}
+        amount={feeAmount}
+        certificateType={certType}
+        applicantName={user?.fullName || ''}
+      />
     </div>
   );
 };

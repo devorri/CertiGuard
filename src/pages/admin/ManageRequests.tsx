@@ -211,6 +211,7 @@ export const ManageRequests: React.FC = () => {
               <th style={{ padding: '14px 18px', fontWeight: 700 }}>Applicant Citizen</th>
               <th style={{ padding: '14px 18px', fontWeight: 700 }}>Document Type</th>
               <th style={{ padding: '14px 18px', fontWeight: 700 }}>Purpose</th>
+              <th style={{ padding: '14px 18px', fontWeight: 700 }}>Payment</th>
               <th style={{ padding: '14px 18px', fontWeight: 700 }}>Mobile / SMS</th>
               <th style={{ padding: '14px 18px', fontWeight: 700 }}>Date Filed</th>
               <th style={{ padding: '14px 18px', fontWeight: 700 }}>Status</th>
@@ -220,7 +221,7 @@ export const ManageRequests: React.FC = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8' }}>
+                <td colSpan={9} style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8' }}>
                   No matching certificate requests found.
                 </td>
               </tr>
@@ -246,6 +247,33 @@ export const ManageRequests: React.FC = () => {
                   </td>
                   <td style={{ padding: '14px 18px', color: '#475569', maxWidth: '220px' }}>
                     {req.purpose}
+                  </td>
+                  <td style={{ padding: '14px 18px' }}>
+                    {req.paymentStatus === 'paid' ? (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700,
+                        background: 'rgba(16, 185, 129, 0.1)', color: '#059669',
+                      }}>
+                        ✓ Paid{req.paymentMethod ? ` (${req.paymentMethod === 'gcash' ? 'GCash' : req.paymentMethod === 'maya' ? 'Maya' : req.paymentMethod === 'bank_transfer' ? 'Bank' : 'Cash'})` : ''}
+                      </span>
+                    ) : req.paymentStatus === 'exempted' ? (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700,
+                        background: 'rgba(20, 184, 166, 0.1)', color: '#0D9488',
+                      }}>
+                        Exempted
+                      </span>
+                    ) : (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700,
+                        background: 'rgba(245, 158, 11, 0.1)', color: '#D97706',
+                      }}>
+                        Unpaid
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '14px 18px', color: '#0038A8', fontWeight: 600 }}>
                     {req.applicantPhone}
@@ -344,6 +372,22 @@ export const ManageRequests: React.FC = () => {
               <div>• SHA-256 Hash will be computed and pinned to the ledger</div>
               <div>• Automated SMS dispatched to: <strong>{activeRequest.applicantPhone}</strong></div>
               <div>• Signatory: <strong>{user?.fullName}</strong></div>
+              <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #E2E8F0' }}>
+                • Payment: {' '}
+                <strong style={{
+                  color: activeRequest.paymentStatus === 'paid' ? '#059669'
+                    : activeRequest.paymentStatus === 'exempted' ? '#0D9488' : '#D97706'
+                }}>
+                  {activeRequest.paymentStatus === 'paid'
+                    ? `✓ PAID via ${activeRequest.paymentMethod === 'gcash' ? 'GCash' : activeRequest.paymentMethod === 'maya' ? 'Maya' : activeRequest.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash'}${activeRequest.paymentRef ? ` (Ref: ${activeRequest.paymentRef})` : ''}`
+                    : activeRequest.paymentStatus === 'exempted'
+                    ? 'EXEMPTED (Indigency)'
+                    : '⚠ UNPAID'}
+                </strong>
+              </div>
+              {activeRequest.feeAmount != null && activeRequest.feeAmount > 0 && (
+                <div>• Fee Amount: <strong>₱{activeRequest.feeAmount.toFixed(2)}</strong></div>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>

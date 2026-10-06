@@ -20,13 +20,16 @@ export const certificateService = {
     type: CertificateType,
     purpose: string,
     yearsOfResidency = 1,
-    emergencyContact?: string
+    emergencyContact?: string,
+    paymentMethod?: 'gcash' | 'maya' | 'bank_transfer' | 'cash',
+    paymentRef?: string
   ): Promise<CertificateRequest> => {
     const user = (await storageService.findUserByIdAsync(userId)) || storageService.findUserById(userId);
     if (!user) throw new Error('User not found');
 
     const controlNumber = certificateService.generateControlNumber();
     const now = new Date().toISOString();
+    const feeAmount = type === 'indigency' ? 0 : 50;
 
     const newRequest: CertificateRequest = {
       id: `req-${Date.now()}`,
@@ -43,7 +46,10 @@ export const certificateService = {
       status: 'pending',
       createdAt: now,
       updatedAt: now,
-      feeAmount: type === 'indigency' ? 0 : 50,
+      feeAmount,
+      paymentStatus: feeAmount === 0 ? 'exempted' : (paymentMethod ? 'paid' : 'unpaid'),
+      paymentMethod: paymentMethod || undefined,
+      paymentRef: paymentRef || undefined,
     };
 
     await storageService.addRequestAsync(newRequest);

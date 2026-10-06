@@ -73,6 +73,9 @@ CREATE TABLE IF NOT EXISTS public.certificate_requests (
     certificate_id TEXT,
     or_number VARCHAR(50),
     fee_amount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'paid', 'exempted')),
+    payment_method VARCHAR(20) CHECK (payment_method IN ('gcash', 'maya', 'bank_transfer', 'cash')),
+    payment_ref VARCHAR(100),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
@@ -442,7 +445,7 @@ VALUES
     '2026-08-28',
     'HON. ROBERTO D. DELA CRUZ',
     'Punong Barangay',
-    '8f4c2e6b91a7d5c3f0e8b2a4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3',
+    '74ba7c00b93f27b0385b9b9f31608638185e78e726241e0e033e1d7f1e38ebef',
     '',
     true,
     0,
@@ -461,7 +464,7 @@ VALUES
     '2026-06-01',
     'HON. ROBERTO D. DELA CRUZ',
     'Punong Barangay',
-    '4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b',
+    'df3d8137798db28f5056c3374db0d4f5080dd618a5748b2d435a0399335e0cb6',
     '',
     true,
     0,

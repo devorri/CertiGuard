@@ -75,6 +75,9 @@ export const mapDbRequestToApp = (r: any): CertificateRequest => ({
   certificateId: r.certificate_id || undefined,
   orNumber: r.or_number || undefined,
   feeAmount: r.fee_amount != null ? Number(r.fee_amount) : 0,
+  paymentStatus: r.payment_status || 'unpaid',
+  paymentMethod: r.payment_method || undefined,
+  paymentRef: r.payment_ref || undefined,
 });
 
 export const mapAppRequestToDb = (r: CertificateRequest) => ({
@@ -97,6 +100,9 @@ export const mapAppRequestToDb = (r: CertificateRequest) => ({
   certificate_id: r.certificateId || null,
   or_number: r.orNumber || null,
   fee_amount: r.feeAmount ?? 0,
+  payment_status: r.paymentStatus || 'unpaid',
+  payment_method: r.paymentMethod || null,
+  payment_ref: r.paymentRef || null,
 });
 
 export const mapDbCertToApp = (c: any): IssuedCertificate => ({
@@ -441,14 +447,45 @@ export const supabaseDataService = {
     if (!isSupabaseConfigured()) return null;
     try {
       const clean = query.trim();
-      const { data, error } = await supabase
+
+      // Try exact match on hash_signature first
+      const { data: hashData, error: hashErr } = await supabase
         .from('issued_certificates')
         .select('*')
-        .or(`hash_signature.ilike.${clean},control_number.ilike.${clean}`)
+        .eq('hash_signature', clean)
         .maybeSingle();
 
-      if (error || !data) return null;
-      return mapDbCertToApp(data);
+      if (!hashErr && hashData) {
+        console.log('[CertiGuard] Found certificate by hash_signature in Supabase');
+        return mapDbCertToApp(hashData);
+      }
+
+      // Try exact match on control_number
+      const { data: ctrlData, error: ctrlErr } = await supabase
+        .from('issued_certificates')
+        .select('*')
+        .eq('control_number', clean)
+        .maybeSingle();
+
+      if (!ctrlErr && ctrlData) {
+        console.log('[CertiGuard] Found certificate by control_number in Supabase');
+        return mapDbCertToApp(ctrlData);
+      }
+
+      // Try case-insensitive match as fallback
+      const { data: iData, error: iErr } = await supabase
+        .from('issued_certificates')
+        .select('*')
+        .ilike('control_number', clean)
+        .maybeSingle();
+
+      if (!iErr && iData) {
+        console.log('[CertiGuard] Found certificate by ilike control_number in Supabase');
+        return mapDbCertToApp(iData);
+      }
+
+      console.log('[CertiGuard] Certificate NOT found in Supabase for query:', clean);
+      return null;
     } catch (err) {
       console.error('Supabase findCertificate exception:', err);
       return null;
