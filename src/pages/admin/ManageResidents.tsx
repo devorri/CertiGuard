@@ -52,7 +52,7 @@ export const ManageResidents: React.FC = () => {
           Barangay Resident Registry
         </h1>
         <p style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '4px' }}>
-          Review resident profiles and dummy valid IDs before approving access to certificate services.
+          Review resident profiles and submitted valid IDs before approving access to certificate services.
         </p>
       </div>
 
@@ -153,10 +153,10 @@ export const ManageResidents: React.FC = () => {
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
               {res.validId ? (
                 <button type="button" className="btn-secondary" onClick={() => setSelectedResident(res)} style={{ padding: '7px 10px', fontSize: '0.76rem' }}>
-                  <Image size={14} /> Review Dummy ID
+                  <Image size={14} /> Review Valid ID
                 </button>
               ) : (
-                <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>No ID file (legacy test profile)</span>
+                <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>No ID file attached</span>
               )}
               {res.verifiedBy && <span style={{ fontSize: '0.72rem', color: '#64748B', alignSelf: 'center' }}>Reviewed by {res.verifiedBy}</span>}
             </div>
@@ -168,8 +168,8 @@ export const ManageResidents: React.FC = () => {
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, padding: '1rem', background: 'rgba(15, 23, 42, 0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#FFF', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: '92vh', overflowY: 'auto', padding: '1.5rem' }}>
             <h2 style={{ margin: 0, color: '#0F172A', fontSize: '1.2rem' }}>Resident ID Verification</h2>
-            <p style={{ color: '#64748B', fontSize: '0.84rem', marginTop: '6px' }}>Review the test-only ID for {selectedResident.fullName}. This file is not part of any issued certificate.</p>
-            {selectedResident.validId && <img src={selectedResident.validId.previewUrl} alt={`Dummy ID uploaded by ${selectedResident.fullName}`} style={{ display: 'block', width: '100%', maxHeight: '360px', objectFit: 'contain', borderRadius: '10px', border: '1px solid #E2E8F0', background: '#F8FAFC' }} />}
+            <p style={{ color: '#64748B', fontSize: '0.84rem', marginTop: '6px' }}>Review the submitted valid ID for {selectedResident.fullName}.</p>
+            {selectedResident.validId && <img src={selectedResident.validId.previewUrl} alt={`Valid ID uploaded by ${selectedResident.fullName}`} style={{ display: 'block', width: '100%', maxHeight: '360px', objectFit: 'contain', borderRadius: '10px', border: '1px solid #E2E8F0', background: '#F8FAFC' }} />}
             <textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={3} placeholder="Optional verification note" style={{ marginTop: '1rem', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1' }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '1rem', flexWrap: 'wrap' }}>
               <button type="button" className="btn-secondary" onClick={() => { setSelectedResident(null); setReviewNote(''); }}>Close</button>

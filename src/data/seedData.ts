@@ -1,13 +1,13 @@
 import type { User, CertificateRequest, IssuedCertificate, SMSMessage } from '../types';
 
-const createDummyIdSvg = (name: string, idNum: string) => {
+const createSampleIdSvg = (name: string, idNum: string) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
     <rect width="600" height="380" rx="16" fill="#1E293B"/>
     <rect x="20" y="20" width="560" height="340" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
     <rect x="20" y="20" width="560" height="70" rx="12" fill="#0038A8"/>
     <circle cx="60" cy="55" r="22" fill="#CE1126"/>
     <text x="95" y="48" fill="#FFFFFF" font-family="sans-serif" font-size="18" font-weight="bold">REPUBLIC OF THE PHILIPPINES</text>
-    <text x="95" y="68" fill="#FCD34D" font-family="sans-serif" font-size="13" font-weight="bold">BARANGAY TAGURANAO RESIDENT ID (DUMMY DEMO)</text>
+    <text x="95" y="68" fill="#FCD34D" font-family="sans-serif" font-size="13" font-weight="bold">BARANGAY TAGURANAO RESIDENT ID CARD</text>
     <rect x="40" y="110" width="130" height="160" rx="8" fill="#E2E8F0" stroke="#94A3B8"/>
     <circle cx="105" cy="160" r="35" fill="#94A3B8"/>
     <path d="M65,240 C65,200 145,200 145,240 Z" fill="#94A3B8"/>
@@ -16,9 +16,9 @@ const createDummyIdSvg = (name: string, idNum: string) => {
     <text x="190" y="185" fill="#64748B" font-family="sans-serif" font-size="12">ID NUMBER / CONTROL NO.</text>
     <text x="190" y="207" fill="#0038A8" font-family="sans-serif" font-size="15" font-weight="bold">${idNum}</text>
     <text x="190" y="240" fill="#64748B" font-family="sans-serif" font-size="12">VERIFICATION STATUS</text>
-    <text x="190" y="262" fill="#059669" font-family="sans-serif" font-size="14" font-weight="bold">OFFICIAL ACADEMIC DEMO ID</text>
+    <text x="190" y="262" fill="#059669" font-family="sans-serif" font-size="14" font-weight="bold">OFFICIAL RESIDENT ID</text>
     <rect x="40" y="295" width="520" height="45" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
-    <text x="50" y="322" fill="#1E40AF" font-family="sans-serif" font-size="11">NOTICE: Dummy photo ID strictly generated for system prototype residency verification testing.</text>
+    <text x="50" y="322" fill="#1E40AF" font-family="sans-serif" font-size="11">NOTICE: Official resident identification document for verification purposes.</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
@@ -66,10 +66,10 @@ export const INITIAL_USERS: User[] = [
     createdAt: '2026-02-10T09:30:00Z',
     verificationStatus: 'approved',
     validId: {
-      fileName: 'dummy_philsys_id_juan.png',
+      fileName: 'philsys_id_juan.png',
       mimeType: 'image/svg+xml',
-      storagePath: 'resident-valid-ids/dummy_philsys_id_juan.png',
-      previewUrl: createDummyIdSvg('JUAN MIGUEL S. BAUTISTA', 'PSN-2026-88912'),
+      storagePath: 'resident-valid-ids/philsys_id_juan.png',
+      previewUrl: createSampleIdSvg('JUAN MIGUEL S. BAUTISTA', 'PSN-2026-88912'),
       uploadedAt: '2026-02-10T09:30:00Z',
     },
   },
@@ -87,10 +87,10 @@ export const INITIAL_USERS: User[] = [
     createdAt: '2026-02-15T11:15:00Z',
     verificationStatus: 'approved',
     validId: {
-      fileName: 'dummy_drivers_license_clarissa.png',
+      fileName: 'drivers_license_clarissa.png',
       mimeType: 'image/svg+xml',
-      storagePath: 'resident-valid-ids/dummy_drivers_license_clarissa.png',
-      previewUrl: createDummyIdSvg('CLARISSA MARIE C. GOMEZ', 'DL-N02-19-09812'),
+      storagePath: 'resident-valid-ids/drivers_license_clarissa.png',
+      previewUrl: createSampleIdSvg('CLARISSA MARIE C. GOMEZ', 'DL-N02-19-09812'),
       uploadedAt: '2026-02-15T11:15:00Z',
     },
   },
@@ -108,10 +108,10 @@ export const INITIAL_USERS: User[] = [
     createdAt: '2026-02-18T14:40:00Z',
     verificationStatus: 'approved',
     validId: {
-      fileName: 'dummy_sss_id_eduardo.png',
+      fileName: 'sss_id_eduardo.png',
       mimeType: 'image/svg+xml',
-      storagePath: 'resident-valid-ids/dummy_sss_id_eduardo.png',
-      previewUrl: createDummyIdSvg('EDUARDO MATEO F. REYES', 'SSS-34-8891023-1'),
+      storagePath: 'resident-valid-ids/sss_id_eduardo.png',
+      previewUrl: createSampleIdSvg('EDUARDO MATEO F. REYES', 'SSS-34-8891023-1'),
       uploadedAt: '2026-02-18T14:40:00Z',
     },
   },
@@ -129,10 +129,10 @@ export const INITIAL_USERS: User[] = [
     createdAt: '2026-03-01T10:00:00Z',
     verificationStatus: 'pending',
     validId: {
-      fileName: 'dummy_postal_id_mark.png',
+      fileName: 'postal_id_mark.png',
       mimeType: 'image/svg+xml',
-      storagePath: 'resident-valid-ids/dummy_postal_id_mark.png',
-      previewUrl: createDummyIdSvg('MARK ANTHONY D. RAMOS', 'PID-8890-1234'),
+      storagePath: 'resident-valid-ids/postal_id_mark.png',
+      previewUrl: createSampleIdSvg('MARK ANTHONY D. RAMOS', 'PID-8890-1234'),
       uploadedAt: '2026-03-01T10:00:00Z',
     },
   },
