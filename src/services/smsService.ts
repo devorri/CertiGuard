@@ -13,13 +13,15 @@ export const smsService = {
     recipientName: string,
     controlNumber: string,
     message: string,
-    type: 'status_update' | 'approved' | 'rejected' | 'security_alert' = 'status_update'
+    type: 'status_update' | 'approved' | 'rejected' | 'security_alert' = 'status_update',
+    requestId?: string
   ): Promise<SMSMessage> => {
     // In future:
     // const response = await fetch('https://api.semaphore.co/api/v4/messages', { ... });
 
     const newSMS: SMSMessage = {
       id: `sms-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      requestId,
       recipientPhone,
       recipientName,
       controlNumber,
@@ -54,19 +56,19 @@ export const smsService = {
   /**
    * Helper templates for standard Barangay notifications
    */
-  notifyApproval: async (recipientPhone: string, recipientName: string, certType: string, controlNumber: string) => {
+  notifyApproval: async (recipientPhone: string, recipientName: string, certType: string, controlNumber: string, requestId?: string) => {
     const text = `CertiGuard Notice: Magandang araw ${recipientName}! Ang inyong ${certType.toUpperCase()} (Ref #${controlNumber}) ay OPISYAL NANG NA-APRUBAHAN at may SHA-256 cryptographic QR seal. Maaari na itong ma-download sa inyong Resident Portal. Salamat sa Barangay Taguranao!`;
-    return smsService.sendSMS(recipientPhone, recipientName, controlNumber, text, 'approved');
+    return smsService.sendSMS(recipientPhone, recipientName, controlNumber, text, 'approved', requestId);
   },
 
-  notifyRejection: async (recipientPhone: string, recipientName: string, certType: string, controlNumber: string, reason: string) => {
+  notifyRejection: async (recipientPhone: string, recipientName: string, certType: string, controlNumber: string, reason: string, requestId?: string) => {
     const text = `CertiGuard Notice: Paumanhin ${recipientName}, ang inyong aplikasyon para sa ${certType.toUpperCase()} (#${controlNumber}) ay HINDI NAAPRUBAHAN. Dahilan: ${reason}. Mangyaring sumadya sa Barangay Hall o mag-file muli ng tamang impormasyon.`;
-    return smsService.sendSMS(recipientPhone, recipientName, controlNumber, text, 'rejected');
+    return smsService.sendSMS(recipientPhone, recipientName, controlNumber, text, 'rejected', requestId);
   },
 
-  notifySubmission: async (recipientPhone: string, recipientName: string, certType: string, controlNumber: string) => {
+  notifySubmission: async (recipientPhone: string, recipientName: string, certType: string, controlNumber: string, requestId?: string) => {
     const text = `CertiGuard Notice: Natanggap ng Barangay Taguranao ang inyong hiling para sa ${certType.toUpperCase()}. Ang inyong Tracking No. ay ${controlNumber}. Makatatanggap kayo ng SMS update oras na ma-evaluate ito.`;
-    return smsService.sendSMS(recipientPhone, recipientName, controlNumber, text, 'status_update');
+    return smsService.sendSMS(recipientPhone, recipientName, controlNumber, text, 'status_update', requestId);
   },
 
   getAllMessages: (): SMSMessage[] => {

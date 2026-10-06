@@ -2,6 +2,7 @@ import type { CertificateRequest, IssuedCertificate, CertificateType, Verificati
 import { storageService } from './storageService';
 import { hashService } from './cryptoService';
 import { smsService } from './smsService';
+import { supabaseDataService } from './supabaseDataService';
 
 export const certificateService = {
   // Generate next sequential control number
@@ -21,7 +22,7 @@ export const certificateService = {
     yearsOfResidency = 1,
     emergencyContact?: string
   ): Promise<CertificateRequest> => {
-    const user = storageService.findUserById(userId);
+    const user = (await storageService.findUserByIdAsync(userId)) || storageService.findUserById(userId);
     if (!user) throw new Error('User not found');
 
     const controlNumber = certificateService.generateControlNumber();
@@ -45,10 +46,10 @@ export const certificateService = {
       feeAmount: type === 'indigency' ? 0 : 50,
     };
 
-    storageService.addRequest(newRequest);
+    await storageService.addRequestAsync(newRequest);
 
     // Send submission confirmation SMS
-    await smsService.notifySubmission(user.phone, user.fullName, type, controlNumber);
+    await smsService.notifySubmission(user.phone, user.fullName, type, controlNumber, newRequest.id);
 
     return newRequest;
   },
@@ -90,6 +91,7 @@ export const certificateService = {
       id: certId,
       requestId: request.id,
       controlNumber: request.controlNumber,
+      releasingStaffId: 'user-staff-01',
       type: request.type,
       recipientName: request.applicantName,
       recipientAddress: request.applicantAddress,
@@ -97,7 +99,7 @@ export const certificateService = {
       purpose: request.purpose,
       issuedDate,
       expiryDate,
-      signatoryName: adminName || 'Hon. Roberto D. Dela Cruz',
+      signatoryName: 'HON. ROBERTO D. DELA CRUZ',
       signatoryTitle: 'Punong Barangay',
       hashSignature,
       qrCodeUrl: '',
@@ -105,25 +107,34 @@ export const certificateService = {
       createdAt: now.toISOString(),
     };
 
-    storageService.addCertificate(newCert);
+    // Store in Supabase database
+    await storageService.addCertificateAsync(newCert);
 
-    // Update Request
-    const updatedReq = storageService.updateRequest(requestId, {
+    // Update Request in Supabase database
+    const assignedOrNumber = orNumber || (request.type === 'indigency' ? 'EXEMPT-INDIGENT' : `OR-${Math.floor(100000 + Math.random() * 900000)}`);
+    await storageService.updateRequestAsync(requestId, {
       status: 'approved',
       processedBy: adminName,
       certificateId: certId,
-      orNumber: orNumber || (request.type === 'indigency' ? 'EXEMPT-INDIGENT' : `OR-${Math.floor(100000 + Math.random() * 900000)}`),
+      orNumber: assignedOrNumber,
     });
+
+    // Audit Trail
+    await supabaseDataService.logAudit(
+      request.userId,
+      `Certificate ${request.controlNumber} approved and signed by ${adminName}`
+    );
 
     // Fire SMS Alert
     await smsService.notifyApproval(
       request.applicantPhone,
       request.applicantName,
       request.type,
-      request.controlNumber
+      request.controlNumber,
+      request.id
     );
 
-    return { request: updatedReq || request, certificate: newCert };
+    return { request: (storageService.getRequests().find((r) => r.id === requestId) || request), certificate: newCert };
   },
 
   // Reject a request
@@ -135,28 +146,38 @@ export const certificateService = {
     const request = storageService.getRequests().find((r) => r.id === requestId);
     if (!request) throw new Error('Request record not found');
 
-    const updated = storageService.updateRequest(requestId, {
+    await storageService.updateRequestAsync(requestId, {
       status: 'rejected',
       processedBy: adminName,
       rejectionReason: reason,
     });
+
+    await supabaseDataService.logAudit(
+      request.userId,
+      `Request ${request.controlNumber} disapproved: ${reason}`
+    );
 
     await smsService.notifyRejection(
       request.applicantPhone,
       request.applicantName,
       request.type,
       request.controlNumber,
-      reason
+      reason,
+      request.id
     );
 
-    return updated || request;
+    return storageService.getRequests().find((r) => r.id === requestId) || request;
   },
 
-  // Public Verification Engine
-  verifyByHashOrControlNumber: (query: string): VerificationResult => {
-    const clean = query.trim();
+  // Synchronous verification for local checks
+  verifyByHashOrControlNumber: (input: string): VerificationResult => {
+    const clean = input.trim();
     if (!clean) {
-      return { verified: false, message: 'Please provide a valid SHA-256 Hash or Control Number.' };
+      return {
+        verified: false,
+        message: 'No verification query provided.',
+        errorReason: 'EMPTY_INPUT',
+      };
     }
 
     let cert = storageService.findCertificateByHash(clean);
@@ -167,59 +188,182 @@ export const certificateService = {
     if (!cert) {
       return {
         verified: false,
-        message: 'No matching official document found in Barangay Taguranao cryptographic ledger.',
-        errorReason: 'Hash or Control Number does not exist or document is counterfeit.',
+        message: 'DOCUMENT NOT FOUND: No issued certificate matches this hash or control number in the registry.',
+        errorReason: 'RECORD_NOT_FOUND',
+      };
+    }
+
+    // Verify cryptographic integrity
+    const recomputedHash = hashService.generateSHA256({
+      controlNumber: cert.controlNumber,
+      type: cert.type,
+      recipientName: cert.recipientName,
+      purok: cert.purok,
+      purpose: cert.purpose,
+      issuedDate: cert.issuedDate,
+    });
+
+    const isTampered = recomputedHash.toLowerCase() !== cert.hashSignature.toLowerCase();
+    if (isTampered) {
+      return {
+        verified: false,
+        message: 'TAMPER DETECTED: The cryptographic signature does not match stored document parameters. Possible forgery!',
+        errorReason: 'CRYPTOGRAPHIC_MISMATCH',
       };
     }
 
     if (!cert.isValid) {
       return {
         verified: false,
-        message: 'Document has been formally REVOKED or marked invalid by the Barangay Administration.',
-        errorReason: 'Revocation flag active.',
+        message: 'CERTIFICATE REVOKED: This document has been revoked by Barangay Administration.',
+        errorReason: 'REVOKED_STATUS',
       };
     }
 
-    // Check expiry
     const today = new Date().toISOString().split('T')[0];
-    const isExpired = today > cert.expiryDate;
+    if (cert.expiryDate < today) {
+      return {
+        verified: false,
+        message: 'CERTIFICATE EXPIRED: The validity period for this official document has lapsed.',
+        errorReason: 'EXPIRED_DATE',
+      };
+    }
 
-    // Mask name for Data Privacy Act (RA 10173 compliance)
-    // E.g. "Juan Miguel S. Bautista" -> "J*** M***** S. B*******"
-    const maskName = (name: string) => {
-      return name
-        .split(' ')
-        .map((part) => (part.length > 2 ? `${part[0]}${'*'.repeat(part.length - 2)}${part[part.length - 1]}` : part))
-        .join(' ');
-    };
+    // Mask name for Privacy compliance
+    const nameParts = cert.recipientName.split(' ');
+    const maskedName = nameParts
+      .map((part) => {
+        if (part.length <= 2) return part;
+        return `${part[0]}${'*'.repeat(part.length - 2)}${part[part.length - 1]}`;
+      })
+      .join(' ');
 
     return {
       verified: true,
-      message: isExpired
-        ? 'Certificate was authentic when issued, but has officially EXPIRED.'
-        : 'CRYPTOGRAPHIC INTEGRITY CONFIRMED: Genuine Barangay Document Verified.',
+      message: 'AUTHENTIC DOCUMENT: Verified and validated against Barangay Taguranao cryptographic ledger.',
       certificate: {
         controlNumber: cert.controlNumber,
         type: cert.type,
-        recipientNameMasked: maskName(cert.recipientName),
+        recipientNameMasked: maskedName,
         purok: cert.purok,
         purpose: cert.purpose,
         issuedDate: cert.issuedDate,
         expiryDate: cert.expiryDate,
-        status: isExpired ? 'EXPIRED' : 'ACTIVE_VALID',
+        status: 'ACTIVE_VALID',
         hashSignature: cert.hashSignature,
-        signatoryName: cert.signatoryName,
+        signatoryName: cert.signatoryName || 'HON. ROBERTO D. DELA CRUZ',
       },
     };
   },
 
-  // Revoke a certificate (Security control)
-  toggleCertificateValidity: (certId: string, isValid: boolean): IssuedCertificate | null => {
+  /**
+   * Asynchronous verification:
+   * First checks local cache, then queries Supabase PostgreSQL cloud table directly.
+   * Logs scan result into verification_logs table.
+   */
+  verifyByHashOrControlNumberAsync: async (input: string): Promise<VerificationResult> => {
+    const clean = input.trim();
+    if (!clean) {
+      return {
+        verified: false,
+        message: 'No verification query provided.',
+        errorReason: 'EMPTY_INPUT',
+      };
+    }
+
+    // 1. Try local cache
+    const localResult = certificateService.verifyByHashOrControlNumber(clean);
+    if (localResult.verified) {
+      if (localResult.certificate) {
+        const cert = storageService.findCertificateByControlNumber(localResult.certificate.controlNumber);
+        if (cert) {
+          supabaseDataService.logVerification(cert.id, 'authentic');
+        }
+      }
+      return localResult;
+    }
+
+    // 2. Query Supabase Cloud
+    const cloudCert = await supabaseDataService.findCertificateByHashOrControl(clean);
+    if (cloudCert) {
+      // Cache locally
+      storageService.addCertificate(cloudCert);
+
+      // Verify cryptographic integrity
+      const recomputedHash = hashService.generateSHA256({
+        controlNumber: cloudCert.controlNumber,
+        type: cloudCert.type,
+        recipientName: cloudCert.recipientName,
+        purok: cloudCert.purok,
+        purpose: cloudCert.purpose,
+        issuedDate: cloudCert.issuedDate,
+      });
+
+      const isTampered = recomputedHash.toLowerCase() !== cloudCert.hashSignature.toLowerCase();
+      if (isTampered) {
+        supabaseDataService.logVerification(cloudCert.id, 'counterfeit');
+        return {
+          verified: false,
+          message: 'TAMPER DETECTED: The cryptographic signature does not match stored document parameters.',
+          errorReason: 'CRYPTOGRAPHIC_MISMATCH',
+        };
+      }
+
+      if (!cloudCert.isValid) {
+        supabaseDataService.logVerification(cloudCert.id, 'revoked');
+        return {
+          verified: false,
+          message: 'CERTIFICATE REVOKED: This document has been revoked by Barangay Administration.',
+          errorReason: 'REVOKED_STATUS',
+        };
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      if (cloudCert.expiryDate < today) {
+        supabaseDataService.logVerification(cloudCert.id, 'expired');
+        return {
+          verified: false,
+          message: 'CERTIFICATE EXPIRED: The validity period for this official document has lapsed.',
+          errorReason: 'EXPIRED_DATE',
+        };
+      }
+
+      supabaseDataService.logVerification(cloudCert.id, 'authentic');
+
+      const nameParts = cloudCert.recipientName.split(' ');
+      const maskedName = nameParts
+        .map((part) => (part.length <= 2 ? part : `${part[0]}${'*'.repeat(part.length - 2)}${part[part.length - 1]}`))
+        .join(' ');
+
+      return {
+        verified: true,
+        message: 'AUTHENTIC DOCUMENT: Verified and validated against Barangay Taguranao Supabase Cloud ledger.',
+        certificate: {
+          controlNumber: cloudCert.controlNumber,
+          type: cloudCert.type,
+          recipientNameMasked: maskedName,
+          purok: cloudCert.purok,
+          purpose: cloudCert.purpose,
+          issuedDate: cloudCert.issuedDate,
+          expiryDate: cloudCert.expiryDate,
+          status: 'ACTIVE_VALID',
+          hashSignature: cloudCert.hashSignature,
+          signatoryName: cloudCert.signatoryName || 'HON. ROBERTO D. DELA CRUZ',
+        },
+      };
+    }
+
+    return localResult;
+  },
+
+  // Revoke/Reinstate a certificate
+  toggleCertificateValidity: async (certId: string, isValid: boolean): Promise<IssuedCertificate | null> => {
     const certs = storageService.getCertificates();
     const index = certs.findIndex((c) => c.id === certId);
     if (index !== -1) {
       certs[index].isValid = isValid;
       storageService.saveCertificates(certs);
+      await supabaseDataService.updateCertificateValidity(certId, isValid);
       return certs[index];
     }
     return null;
@@ -231,22 +375,30 @@ export const certificateService = {
     const certificates = storageService.getCertificates();
     const users = storageService.getUsers().filter((u) => u.role === 'resident');
 
+    const totalIssued = certificates.length;
     const totalRequests = requests.length;
     const pendingRequests = requests.filter((r) => r.status === 'pending').length;
     const approvedRequests = requests.filter((r) => r.status === 'approved').length;
     const rejectedRequests = requests.filter((r) => r.status === 'rejected').length;
-
     const clearanceCount = certificates.filter((c) => c.type === 'clearance').length;
     const indigencyCount = certificates.filter((c) => c.type === 'indigency').length;
     const residencyCount = certificates.filter((c) => c.type === 'residency').length;
+    const totalResidents = users.length;
+    const pendingResidentVerifications = users.filter((u) => u.verificationStatus === 'pending').length;
 
     return {
       totalRequests,
-      pendingRequests,
       approvedRequests,
       rejectedRequests,
-      totalResidents: users.length,
-      totalIssuedCertificates: certificates.length,
+      totalIssued,
+      totalIssuedCertificates: totalIssued,
+      pendingRequests,
+      clearanceCount,
+      indigencyCount,
+      residencyCount,
+      totalResidents,
+      pendingResidentVerifications,
+      tamperDetections: 0,
       distribution: {
         clearance: clearanceCount,
         indigency: indigencyCount,

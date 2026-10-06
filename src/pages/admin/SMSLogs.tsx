@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { smsService } from '../../services/smsService';
+import { storageService } from '../../services/storageService';
 import type { SMSMessage } from '../../types';
 import { Send, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,6 +17,14 @@ export const SMSLogs: React.FC = () => {
   const refreshLogs = () => {
     setMessages(smsService.getAllMessages());
   };
+
+  React.useEffect(() => {
+    const unsub = storageService.onStorageSync(() => {
+      refreshLogs();
+    });
+    storageService.syncFromSupabase().then(() => refreshLogs());
+    return unsub;
+  }, []);
 
   const handleSendCustomSMS = async (e: React.FormEvent) => {
     e.preventDefault();

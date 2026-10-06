@@ -6,6 +6,7 @@ import { pdfService } from '../../services/pdfService';
 import { smsService } from '../../services/smsService';
 import { StatCard } from '../../components/ui/StatCard';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import type { CertificateRequest } from '../../types';
 import {
   FileText,
   Clock,
@@ -20,8 +21,21 @@ import toast from 'react-hot-toast';
 export const ResidentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'requests' | 'sms'>('requests');
+  const [requests, setRequests] = useState<CertificateRequest[]>(() =>
+    storageService.getRequests().filter((r) => r.userId === user?.id)
+  );
 
-  const allRequests = storageService.getRequests().filter((r) => r.userId === user?.id);
+  React.useEffect(() => {
+    const unsub = storageService.onStorageSync(() => {
+      setRequests(storageService.getRequests().filter((r) => r.userId === user?.id));
+    });
+    storageService.syncFromSupabase().then(() => {
+      setRequests(storageService.getRequests().filter((r) => r.userId === user?.id));
+    });
+    return unsub;
+  }, [user?.id]);
+
+  const allRequests = requests;
   const approvedRequests = allRequests.filter((r) => r.status === 'approved');
   const pendingRequests = allRequests.filter((r) => r.status === 'pending');
   const userSMS = user ? smsService.getUserMessages(user.phone) : [];

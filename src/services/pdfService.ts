@@ -1,6 +1,26 @@
 import jsPDF from 'jspdf';
 import type { IssuedCertificate } from '../types';
 import { hashService } from './cryptoService';
+import kapitanSignatureUrl from '../assets/kapitan-signature.png';
+
+/**
+ * Loads an image URL into a PNG data URL string that jsPDF can consume with transparency preserved.
+ */
+const loadImageAsDataUrl = (src: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('Failed to load signature image'));
+    img.src = src;
+  });
 
 export const pdfService = {
   /**
@@ -189,13 +209,31 @@ export const pdfService = {
     doc.setFontSize(9);
     doc.text('Signature over Printed Name', 25, signY + 24);
 
-    // Official Signatory
+    // Official Signatory — Specimen Signature Overlay
+    try {
+      const sigDataUrl = await loadImageAsDataUrl(kapitanSignatureUrl);
+      // Center signature horizontally over the name area (name right margin is at pageWidth - 30)
+      const sigWidth = 50;
+      const sigHeight = 15;
+      const sigX = pageWidth - 30 - 54; // Aligned with the printed name block
+      const sigYPos = signY + 2; // Overlapping printed name naturally
+      doc.addImage(sigDataUrl, 'PNG', sigX, sigYPos, sigWidth, sigHeight);
+    } catch (err) {
+      console.warn('Could not overlay signature image:', err);
+    }
+
+    // Official Signatory Name & Title (Punong Barangay Roberto D. Dela Cruz)
+    const effectiveSignatory = (cert.signatoryName && !cert.signatoryName.toLowerCase().includes('maria elena'))
+      ? cert.signatoryName.toUpperCase()
+      : 'HON. ROBERTO D. DELA CRUZ';
+
     doc.setFont('times', 'bold');
     doc.setFontSize(12);
-    doc.text(cert.signatoryName.toUpperCase(), pageWidth - 30, signY + 16, { align: 'right' });
+    doc.text(effectiveSignatory, pageWidth - 30, signY + 16, { align: 'right' });
+    doc.line(pageWidth - 30 - 65, signY + 17, pageWidth - 30, signY + 17); // underline
     doc.setFont('times', 'normal');
     doc.setFontSize(10);
-    doc.text(cert.signatoryTitle, pageWidth - 30, signY + 22, { align: 'right' });
+    doc.text('Punong Barangay', pageWidth - 30, signY + 22, { align: 'right' });
     doc.text('Barangay Taguranao', pageWidth - 30, signY + 27, { align: 'right' });
 
     // 8. Cryptographic Verification & QR Code Security Footer (CertiGuard Engine)

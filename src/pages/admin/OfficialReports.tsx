@@ -1,9 +1,18 @@
 import React from 'react';
 import { certificateService } from '../../services/certificateService';
+import { storageService } from '../../services/storageService';
 import { Printer } from 'lucide-react';
 import barangayLogo from '../../assets/barangay-logo.png';
 
 export const OfficialReports: React.FC = () => {
+  const [, setTick] = React.useState(0);
+
+  React.useEffect(() => {
+    const unsub = storageService.onStorageSync(() => setTick((t) => t + 1));
+    storageService.syncFromSupabase().then(() => setTick((t) => t + 1));
+    return unsub;
+  }, []);
+
   const analytics = certificateService.getAnalytics();
 
   const handlePrint = () => {

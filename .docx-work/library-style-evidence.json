@@ -1,0 +1,172 @@
+{
+  "input": "C:\\Users\\Tom Pc\\Downloads\\Web-Based-Library-Management-System-with-AI-Based-Book-Recommendation-and-Analytics-for-Matalam-Polytechnic-College-IncL-AutoRecovered (2).docx",
+  "fonts_by_char_count": {
+    "Arial": 28600,
+    "Times New Roman": 1884,
+    "SimSun": 1
+  },
+  "direct_run_formatting_runs": 900,
+  "direct_paragraph_formatting_paragraphs": 502,
+  "heading_like_paragraphs_not_heading_style": [
+    {
+      "para_index": 7,
+      "text": "BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY",
+      "style": "Normal"
+    },
+    {
+      "para_index": 16,
+      "text": "MAY 2026",
+      "style": "Normal"
+    },
+    {
+      "para_index": 17,
+      "text": "Chapter 1",
+      "style": "Normal"
+    },
+    {
+      "para_index": 18,
+      "text": "INTRODUCTION",
+      "style": "Normal"
+    },
+    {
+      "para_index": 19,
+      "text": "Background of the study",
+      "style": "Normal"
+    },
+    {
+      "para_index": 25,
+      "text": "Statement of the Problem",
+      "style": "Normal"
+    },
+    {
+      "para_index": 30,
+      "text": "Objectives of the Study",
+      "style": "Normal"
+    },
+    {
+      "para_index": 35,
+      "text": "Scope and Delimitation of the Study",
+      "style": "Normal"
+    },
+    {
+      "para_index": 38,
+      "text": "Significance of the study",
+      "style": "Normal"
+    },
+    {
+      "para_index": 45,
+      "text": "Chapter II",
+      "style": "Normal"
+    },
+    {
+      "para_index": 46,
+      "text": "REVIEW RELATED LITERATURE",
+      "style": "Normal"
+    },
+    {
+      "para_index": 58,
+      "text": "Chapter III",
+      "style": "Normal"
+    },
+    {
+      "para_index": 59,
+      "text": "METHODOLOGY",
+      "style": "Normal"
+    },
+    {
+      "para_index": 60,
+      "text": "Technicality of the project",
+      "style": "Normal"
+    },
+    {
+      "para_index": 71,
+      "text": "Locale of the study",
+      "style": "Normal"
+    },
+    {
+      "para_index": 75,
+      "text": "Figure 1: Locale of the Study",
+      "style": "Normal"
+    },
+    {
+      "para_index": 76,
+      "text": "Organizational Chart",
+      "style": "Normal"
+    },
+    {
+      "para_index": 80,
+      "text": "Figure 2: Organizational Chart",
+      "style": "Normal"
+    },
+    {
+      "para_index": 81,
+      "text": "Requirements for Modeling",
+      "style": "Normal"
+    },
+    {
+      "para_index": 82,
+      "text": "IPO Chart",
+      "style": "Normal"
+    }
+  ],
+  "examples": {
+    "direct_paragraph_formatting": [
+      {
+        "para_index": 1,
+        "text": "WEB-BASED LIBRARY MANAGEMENT SYSTEM: AI-BASED BOOK RECOMMENDATION, E-BOOK AND ANALYTICS WITH SMS NOTIFICATION FOR MATALA",
+        "style": "Normal"
+      },
+      {
+        "para_index": 2,
+        "text": "",
+        "style": "Normal"
+      },
+      {
+        "para_index": 3,
+        "text": "",
+        "style": "Normal"
+      },
+      {
+        "para_index": 4,
+        "text": "",
+        "style": "Normal"
+      },
+      {
+        "para_index": 5,
+        "text": "",
+        "style": "Normal"
+      }
+    ],
+    "direct_run_formatting": [
+      {
+        "para_index": 1,
+        "run_text": "WEB-BASED ",
+        "style": "Normal"
+      },
+      {
+        "para_index": 1,
+        "run_text": "LIBRARY",
+        "style": "Normal"
+      },
+      {
+        "para_index": 1,
+        "run_text": " MANAGEMENT SYSTEM",
+        "style": "Normal"
+      },
+      {
+        "para_index": 1,
+        "run_text": ":",
+        "style": "Normal"
+      },
+      {
+        "para_index": 1,
+        "run_text": " AI-BASED BOOK ",
+        "style": "Normal"
+      }
+    ]
+  },
+  "notes": [
+    "Direct formatting is not always wrong, but it often causes inconsistent output when templates change.",
+    "Heading-like paragraphs not using Heading styles can break TOC and accessibility."
+  ]
+}

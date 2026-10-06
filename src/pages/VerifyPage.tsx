@@ -20,6 +20,9 @@ export const VerifyPage: React.FC = () => {
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
+
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     if (urlHash) {
       setInputQuery(urlHash);
@@ -27,15 +30,23 @@ export const VerifyPage: React.FC = () => {
     }
   }, [urlHash]);
 
-  const performVerification = (query: string) => {
+  const performVerification = async (query: string) => {
     if (!query.trim()) {
       toast.error('Please enter a SHA-256 Hash or Control Number.');
       return;
     }
 
-    const res = certificateService.verifyByHashOrControlNumber(query);
-    setResult(res);
-    setHasSearched(true);
+    setIsLoading(true);
+    try {
+      const res = await certificateService.verifyByHashOrControlNumberAsync(query);
+      setResult(res);
+      setHasSearched(true);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error verifying document.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -108,53 +119,13 @@ export const VerifyPage: React.FC = () => {
                 }}
               />
             </div>
-            <button type="submit" className="btn-primary" style={{ padding: '12px 24px' }}>
+            <button type="submit" className="btn-primary" disabled={isLoading} style={{ padding: '12px 24px', opacity: isLoading ? 0.7 : 1 }}>
               <ShieldCheck size={18} />
-              <span>Validate Integrity</span>
+              <span>{isLoading ? 'Verifying...' : 'Validate Integrity'}</span>
             </button>
           </div>
         </form>
 
-        {/* Quick Demo Pre-fill */}
-        <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '0.78rem', color: '#64748B' }}>
-          <span>Try sample valid hash:</span>
-          <button
-            type="button"
-            onClick={() => {
-              const hash = '8f4c2e6b91a7d5c3f0e8b2a4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3';
-              setInputQuery(hash);
-              performVerification(hash);
-            }}
-            style={{
-              background: '#F1F5F9',
-              border: '1px solid #CBD5E1',
-              padding: '3px 8px',
-              borderRadius: '4px',
-              fontFamily: 'monospace',
-              fontSize: '0.75rem',
-            }}
-          >
-            8f4c2e6b... (Juan Miguel Clearance)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const ctrl = 'CG-TGR-2026-0002';
-              setInputQuery(ctrl);
-              performVerification(ctrl);
-            }}
-            style={{
-              background: '#F1F5F9',
-              border: '1px solid #CBD5E1',
-              padding: '3px 8px',
-              borderRadius: '4px',
-              fontFamily: 'monospace',
-              fontSize: '0.75rem',
-            }}
-          >
-            CG-TGR-2026-0002 (Indigency)
-          </button>
-        </div>
       </div>
 
       {/* Verification Result Output */}

@@ -17,6 +17,16 @@ import {
 import barangayLogo from '../../assets/barangay-logo.png';
 
 export const AdminDashboard: React.FC = () => {
+  const [, setTick] = React.useState(0);
+
+  React.useEffect(() => {
+    const unsub = storageService.onStorageSync(() => {
+      setTick((t) => t + 1);
+    });
+    storageService.syncFromSupabase().then(() => setTick((t) => t + 1));
+    return unsub;
+  }, []);
+
   const analytics = certificateService.getAnalytics();
   const requests = storageService.getRequests();
   const pendingQueue = requests.filter((r) => r.status === 'pending').slice(0, 5);

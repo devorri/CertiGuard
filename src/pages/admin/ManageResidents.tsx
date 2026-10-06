@@ -1,13 +1,42 @@
 import React, { useState } from 'react';
 import { storageService } from '../../services/storageService';
 import type { User } from '../../types';
-import { Search, Phone, MapPin, Calendar, Mail } from 'lucide-react';
+import { Search, Phone, MapPin, Calendar, Mail, Image, CheckCircle, XCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export const ManageResidents: React.FC = () => {
-  const [residents] = useState<User[]>(() =>
+  const { user } = useAuth();
+  const [residents, setResidents] = useState<User[]>(() =>
     storageService.getUsers().filter((u) => u.role === 'resident')
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedResident, setSelectedResident] = useState<User | null>(null);
+  const [reviewNote, setReviewNote] = useState('');
+
+  const refreshResidents = () => setResidents(storageService.getUsers().filter((u) => u.role === 'resident'));
+
+  React.useEffect(() => {
+    const unsub = storageService.onStorageSync(() => {
+      refreshResidents();
+    });
+    storageService.syncFromSupabase().then(() => refreshResidents());
+    return unsub;
+  }, []);
+
+  const reviewResident = async (status: 'approved' | 'rejected') => {
+    if (!selectedResident || !user) return;
+    await storageService.updateUserAsync(selectedResident.id, {
+      verificationStatus: status,
+      verifiedBy: user.fullName,
+      verifiedAt: new Date().toISOString(),
+      verificationNote: reviewNote.trim() || undefined,
+    });
+    toast.success(status === 'approved' ? 'Resident ID verified and registration approved.' : 'Registration marked as not approved.');
+    setSelectedResident(null);
+    setReviewNote('');
+    refreshResidents();
+  };
 
   const filtered = residents.filter(
     (r) =>
@@ -23,7 +52,7 @@ export const ManageResidents: React.FC = () => {
           Barangay Resident Registry
         </h1>
         <p style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '4px' }}>
-          Census and registered citizen profiles for Barangay Taguranao certificate applicants.
+          Review resident profiles and dummy valid IDs before approving access to certificate services.
         </p>
       </div>
 
@@ -85,8 +114,8 @@ export const ManageResidents: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '1rem', color: '#0F172A', margin: 0 }}>{res.fullName}</h3>
-                <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 600 }}>
-                  ✓ Bonafide Resident
+                <span style={{ fontSize: '0.75rem', color: res.verificationStatus === 'approved' ? '#10B981' : res.verificationStatus === 'rejected' ? '#DC2626' : '#D97706', fontWeight: 600 }}>
+                  {res.verificationStatus === 'approved' ? '✓ Verified Resident' : res.verificationStatus === 'rejected' ? '✕ Registration Not Approved' : '● ID Verification Pending'}
                 </span>
               </div>
             </div>
@@ -121,9 +150,35 @@ export const ManageResidents: React.FC = () => {
             >
               Address: {res.address}
             </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+              {res.validId ? (
+                <button type="button" className="btn-secondary" onClick={() => setSelectedResident(res)} style={{ padding: '7px 10px', fontSize: '0.76rem' }}>
+                  <Image size={14} /> Review Dummy ID
+                </button>
+              ) : (
+                <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>No ID file (legacy test profile)</span>
+              )}
+              {res.verifiedBy && <span style={{ fontSize: '0.72rem', color: '#64748B', alignSelf: 'center' }}>Reviewed by {res.verifiedBy}</span>}
+            </div>
           </div>
         ))}
       </div>
+
+      {selectedResident && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, padding: '1rem', background: 'rgba(15, 23, 42, 0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#FFF', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: '92vh', overflowY: 'auto', padding: '1.5rem' }}>
+            <h2 style={{ margin: 0, color: '#0F172A', fontSize: '1.2rem' }}>Resident ID Verification</h2>
+            <p style={{ color: '#64748B', fontSize: '0.84rem', marginTop: '6px' }}>Review the test-only ID for {selectedResident.fullName}. This file is not part of any issued certificate.</p>
+            {selectedResident.validId && <img src={selectedResident.validId.previewUrl} alt={`Dummy ID uploaded by ${selectedResident.fullName}`} style={{ display: 'block', width: '100%', maxHeight: '360px', objectFit: 'contain', borderRadius: '10px', border: '1px solid #E2E8F0', background: '#F8FAFC' }} />}
+            <textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={3} placeholder="Optional verification note" style={{ marginTop: '1rem', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1' }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '1rem', flexWrap: 'wrap' }}>
+              <button type="button" className="btn-secondary" onClick={() => { setSelectedResident(null); setReviewNote(''); }}>Close</button>
+              <button type="button" className="btn-danger" onClick={() => reviewResident('rejected')}><XCircle size={16} /> Reject</button>
+              <button type="button" className="btn-primary" onClick={() => reviewResident('approved')}><CheckCircle size={16} /> Approve Resident</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

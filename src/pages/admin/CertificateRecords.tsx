@@ -15,8 +15,16 @@ export const CertificateRecords: React.FC = () => {
     setCerts(storageService.getCertificates());
   };
 
-  const handleToggleValidity = (certId: string, currentValid: boolean) => {
-    const updated = certificateService.toggleCertificateValidity(certId, !currentValid);
+  React.useEffect(() => {
+    const unsub = storageService.onStorageSync(() => {
+      refreshCerts();
+    });
+    storageService.syncFromSupabase().then(() => refreshCerts());
+    return unsub;
+  }, []);
+
+  const handleToggleValidity = async (certId: string, currentValid: boolean) => {
+    const updated = await certificateService.toggleCertificateValidity(certId, !currentValid);
     if (updated) {
       toast.success(
         `Certificate ${updated.controlNumber} is now marked as ${updated.isValid ? 'VALID' : 'REVOKED'}.`

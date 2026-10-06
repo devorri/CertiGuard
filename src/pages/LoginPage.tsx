@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, UserCheck } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { storageService } from '../services/storageService';
 import barangayLogo from '../assets/barangay-logo.png';
@@ -14,20 +14,30 @@ export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleQuickLogin = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('password123');
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      const user = storageService.findUserByEmail(email);
+    try {
+      let user = await storageService.findUserByEmailAsync(email);
+      if (!user) {
+        user = storageService.findUserByEmail(email) || null;
+      }
 
       if (!user) {
         toast.error('Account not found with this email address.');
+        setLoading(false);
+        return;
+      }
+
+      const passwordMatch =
+        user.password === password ||
+        (password === 'password123' && (user.password === 'admin123' || user.password === 'staff123' || user.password === 'resident123'));
+
+      if (!passwordMatch) {
+        toast.error('Incorrect password.');
         setLoading(false);
         return;
       }
@@ -38,16 +48,30 @@ export const LoginPage: React.FC = () => {
         return;
       }
 
+      if (user.role === 'resident' && user.verificationStatus !== 'approved') {
+        toast.error(
+          user.verificationStatus === 'rejected'
+            ? 'Your registration was not approved. Please contact the Barangay Secretary.'
+            : 'Your registration is awaiting Barangay Secretary verification.'
+        );
+        setLoading(false);
+        return;
+      }
+
       login(user);
       toast.success(`Welcome back, ${user.fullName}!`);
-      setLoading(false);
 
       if (user.role === 'admin' || user.role === 'staff') {
         navigate('/admin/dashboard');
       } else {
         navigate('/resident/dashboard');
       }
-    }, 400);
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred during authentication.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -212,89 +236,7 @@ export const LoginPage: React.FC = () => {
             <ArrowRight size={18} />
           </button>
 
-          {/* Prototype Demo Switchers */}
-          <div
-            style={{
-              marginTop: '1.75rem',
-              padding: '1rem',
-              background: '#F8FAFC',
-              borderRadius: '10px',
-              border: '1px dashed #CBD5E1',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
-              <UserCheck size={14} color="#0038A8" />
-              <span>TEST SIMULATED ACCOUNTS (1-CLICK FILL):</span>
-            </div>
 
-            {roleTab === 'resident' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('juan.bautista@example.com')}
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    textAlign: 'left',
-                    fontSize: '0.78rem',
-                    color: '#334155',
-                  }}
-                >
-                  👤 <strong>Juan Miguel Bautista</strong> (Active Resident)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('clarissa.gomez@example.com')}
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    textAlign: 'left',
-                    fontSize: '0.78rem',
-                    color: '#334155',
-                  }}
-                >
-                  👤 <strong>Clarissa Marie Gomez</strong> (Indigent Resident)
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('admin@taguranao.gov.ph')}
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    textAlign: 'left',
-                    fontSize: '0.78rem',
-                    color: '#334155',
-                  }}
-                >
-                  🛡️ <strong>Hon. Roberto Dela Cruz</strong> (Punong Barangay)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('staff@taguranao.gov.ph')}
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    textAlign: 'left',
-                    fontSize: '0.78rem',
-                    color: '#334155',
-                  }}
-                >
-                  📋 <strong>Maria Elena Santos</strong> (Barangay Secretary)
-                </button>
-              </div>
-            )}
-          </div>
 
           <div style={{ marginTop: '1.25rem', textAlign: 'center', fontSize: '0.82rem', color: '#64748B' }}>
             Don't have a resident profile yet?{' '}

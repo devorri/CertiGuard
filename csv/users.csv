@@ -1,0 +1,16 @@
+Field Name,Data Type,Size,Description,Default,Constraints,Null,Key
+id,VARCHAR,64,Unique user ID identifier,—,Primary Key,No,PK
+fullName,VARCHAR,150,Full legal name of the user,None,Required,No,—
+email,VARCHAR,120,Account email address used for signing in,None,Unique,No,—
+phone,VARCHAR,20,Contact mobile number for SMS notifications,None,Required,No,—
+address,TEXT,—,Detailed house/street residential address,None,Required,No,—
+purok,VARCHAR,50,Assigned Barangay Purok/Zone,None,Required,No,—
+civilStatus,ENUM,—,"Civil status (Single, Married, etc.)",None,Limited values,No,—
+birthDate,DATE,—,Date of birth,None,Required,No,—
+role,ENUM,—,Account access role,None,Limited values,No,—
+password,VARCHAR,255,Hashed account credential password,None,Required,No,—
+verificationStatus,ENUM,—,Residency verification status,'pending',Limited values,No,—
+verifiedBy,VARCHAR,150,Name of the Secretary/Admin who verified,NULL,Optional,Yes,—
+verifiedAt,TIMESTAMP,—,Timestamp when registration was approved/rejected,NULL,Optional,Yes,—
+verificationNote,TEXT,—,Remarks/reasons provided during verification,NULL,Optional,Yes,—
+createdAt,TIMESTAMP,—,Timestamp when account was initiated,Current Timestamp,Required,No,—

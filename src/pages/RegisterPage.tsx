@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Phone, MapPin, Mail, Lock, Calendar } from 'lucide-react';
+import { User, Phone, MapPin, Mail, Lock, Calendar, Upload, FileImage } from 'lucide-react';
 import { storageService } from '../services/storageService';
-import { useAuth } from '../context/AuthContext';
+import { uploadValidIdImage } from '../services/supabaseClient';
 import barangayLogo from '../assets/barangay-logo.png';
 import toast from 'react-hot-toast';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -22,6 +21,7 @@ export const RegisterPage: React.FC = () => {
     confirmPassword: '',
     agreedToPrivacy: false,
   });
+  const [validId, setValidId] = useState<File | null>(null);
 
   const purokList = [
     'Purok 1 (Centro)',
@@ -32,7 +32,7 @@ export const RegisterPage: React.FC = () => {
     'Purok 6 (Maharlika)',
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.agreedToPrivacy) {
@@ -45,15 +45,31 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
-    // Check existing
-    const existing = storageService.findUserByEmail(formData.email);
-    if (existing) {
-      toast.error('An account already exists with this email.');
+    if (!validId) {
+      toast.error('Please upload a dummy valid ID image for Secretary review.');
       return;
     }
 
+    // Check existing
+    const existing = (await storageService.findUserByEmailAsync(formData.email)) || storageService.findUserByEmail(formData.email);
+    if (existing) {
+      toast.error('An account already exists with this email in the database.');
+      return;
+    }
+
+    const previewUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('Unable to read the ID image.'));
+      reader.readAsDataURL(validId);
+    });
+
+    const userId = `user-${Date.now()}`;
+    // Attempt cloud upload to Supabase Storage 'Files' bucket
+    const uploadedCloud = await uploadValidIdImage(validId, userId);
+
     const newUser = {
-      id: `user-${Date.now()}`,
+      id: userId,
       fullName: formData.fullName.trim(),
       email: formData.email.trim(),
       phone: formData.phone.trim(),
@@ -64,13 +80,19 @@ export const RegisterPage: React.FC = () => {
       role: 'resident' as const,
       password: formData.password,
       createdAt: new Date().toISOString(),
+      verificationStatus: 'pending' as const,
+      validId: {
+        fileName: validId.name,
+        mimeType: validId.type,
+        storagePath: uploadedCloud?.storagePath || `resident-valid-ids/${Date.now()}-${validId.name}`,
+        previewUrl: uploadedCloud?.publicUrl || previewUrl,
+        uploadedAt: new Date().toISOString(),
+      },
     };
 
-    storageService.addUser(newUser);
-    login(newUser);
-
-    toast.success('Registration successful! Welcome to Barangay Taguranao CertiGuard.');
-    navigate('/resident/dashboard');
+    await storageService.addUserAsync(newUser);
+    toast.success('Registration submitted to Supabase! Please wait for the Barangay Secretary to verify your ID.');
+    navigate('/login');
   };
 
   return (
@@ -221,6 +243,78 @@ export const RegisterPage: React.FC = () => {
                 <option value="Widowed">Widowed</option>
                 <option value="Separated">Separated</option>
               </select>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1.25rem' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+              Upload Valid ID for Verification
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', border: '1px dashed #93C5FD', borderRadius: '8px', background: '#EFF6FF', cursor: 'pointer', color: '#1D4ED8' }}>
+              {validId ? <FileImage size={18} /> : <Upload size={18} />}
+              <span style={{ fontSize: '0.84rem' }}>{validId ? validId.name : 'Choose a dummy ID image (JPG, PNG, or WEBP; max 2 MB)'}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                required
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  if (file && file.size > 2 * 1024 * 1024) {
+                    toast.error('Use an image smaller than 2 MB for the prototype.');
+                    e.currentTarget.value = '';
+                    setValidId(null);
+                    return;
+                  }
+                  setValidId(file);
+                }}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+              <p style={{ margin: 0, fontSize: '0.76rem', color: '#64748B', lineHeight: 1.45, flex: 1, minWidth: '240px' }}>
+                For academic testing, upload a dummy ID only. It is visible only to authorized staff for residency verification and never appears on a certificate.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
+                    <rect width="600" height="380" rx="16" fill="#1E293B"/>
+                    <rect x="20" y="20" width="560" height="340" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+                    <rect x="20" y="20" width="560" height="70" rx="12" fill="#0038A8"/>
+                    <circle cx="60" cy="55" r="22" fill="#CE1126"/>
+                    <text x="95" y="48" fill="#FFFFFF" font-family="sans-serif" font-size="18" font-weight="bold">REPUBLIC OF THE PHILIPPINES</text>
+                    <text x="95" y="68" fill="#FCD34D" font-family="sans-serif" font-size="13" font-weight="bold">BARANGAY TAGURANAO RESIDENT ID (DUMMY DEMO)</text>
+                    <rect x="40" y="110" width="130" height="160" rx="8" fill="#E2E8F0" stroke="#94A3B8"/>
+                    <circle cx="105" cy="160" r="35" fill="#94A3B8"/>
+                    <path d="M65,240 C65,200 145,200 145,240 Z" fill="#94A3B8"/>
+                    <text x="190" y="130" fill="#64748B" font-family="sans-serif" font-size="12">FULL NAME / PANGALAN</text>
+                    <text x="190" y="152" fill="#0F172A" font-family="sans-serif" font-size="16" font-weight="bold">${formData.fullName || 'TEST CITIZEN'}</text>
+                    <text x="190" y="185" fill="#64748B" font-family="sans-serif" font-size="12">ID NUMBER / CONTROL NO.</text>
+                    <text x="190" y="207" fill="#0038A8" font-family="sans-serif" font-size="15" font-weight="bold">TEST-ID-2026-DEMO</text>
+                    <text x="190" y="240" fill="#64748B" font-family="sans-serif" font-size="12">VERIFICATION STATUS</text>
+                    <text x="190" y="262" fill="#059669" font-family="sans-serif" font-size="14" font-weight="bold">OFFICIAL ACADEMIC DEMO ID</text>
+                    <rect x="40" y="295" width="520" height="45" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+                    <text x="50" y="322" fill="#1E40AF" font-family="sans-serif" font-size="11">NOTICE: Dummy photo ID strictly generated for system prototype residency verification testing.</text>
+                  </svg>`;
+                  const blob = new Blob([svgData], { type: 'image/svg+xml' });
+                  const testFile = new File([blob], 'dummy_resident_id_sample.svg', { type: 'image/svg+xml' });
+                  setValidId(testFile);
+                  toast.success('Attached sample dummy ID card for testing!');
+                }}
+                style={{
+                  background: '#F1F5F9',
+                  border: '1px solid #CBD5E1',
+                  color: '#0F172A',
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                ⚡ Use Sample Dummy ID
+              </button>
             </div>
           </div>
 

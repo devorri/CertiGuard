@@ -32,6 +32,14 @@ export const ManageRequests: React.FC = () => {
     setRequests(storageService.getRequests());
   };
 
+  React.useEffect(() => {
+    const unsub = storageService.onStorageSync(() => {
+      refreshList();
+    });
+    storageService.syncFromSupabase().then(() => refreshList());
+    return unsub;
+  }, []);
+
   const handleApproveConfirm = async () => {
     if (!activeRequest || !user) return;
     setIsProcessing(true);

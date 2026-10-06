@@ -1,4 +1,5 @@
 export type UserRole = 'resident' | 'admin' | 'staff';
+export type ResidentVerificationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface User {
   id: string;
@@ -12,6 +13,18 @@ export interface User {
   role: UserRole;
   password?: string;
   createdAt: string;
+  /** Prototype-only local representation of an object stored in Supabase Storage in production. */
+  validId?: {
+    fileName: string;
+    mimeType: string;
+    storagePath: string;
+    previewUrl: string;
+    uploadedAt: string;
+  };
+  verificationStatus?: ResidentVerificationStatus;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  verificationNote?: string;
 }
 
 export type CertificateType = 'clearance' | 'indigency' | 'residency';
@@ -44,6 +57,7 @@ export interface IssuedCertificate {
   id: string;
   requestId: string;
   controlNumber: string;
+  releasingStaffId?: string;
   type: CertificateType;
   recipientName: string;
   recipientAddress: string;
@@ -62,6 +76,7 @@ export interface IssuedCertificate {
 
 export interface SMSMessage {
   id: string;
+  requestId?: string;
   recipientPhone: string;
   recipientName: string;
   controlNumber: string;
@@ -69,6 +84,22 @@ export interface SMSMessage {
   status: 'sent' | 'delivered' | 'failed';
   timestamp: string;
   type: 'status_update' | 'approved' | 'rejected' | 'security_alert';
+}
+
+export interface SystemAuditTrail {
+  id: string;
+  userId: string;
+  action: string;
+  ipAddress: string;
+  timestamp: string;
+}
+
+export interface VerificationLog {
+  id: string;
+  certificateId: string;
+  verifierIp: string;
+  verifiedAt: string;
+  result: 'authentic' | 'counterfeit' | 'revoked' | 'expired';
 }
 
 export interface VerificationResult {
