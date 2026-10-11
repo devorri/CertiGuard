@@ -6,6 +6,7 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { VerifyPage } from './pages/VerifyPage';
+import { ForgeryDemoPage } from './pages/ForgeryDemoPage';
 import { ResidentDashboard } from './pages/resident/ResidentDashboard';
 import { RequestCertificate } from './pages/resident/RequestCertificate';
 import { AdminLayout } from './components/layout/AdminLayout';
@@ -30,6 +31,7 @@ export const App: React.FC = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/verify/:hash" element={<VerifyPage />} />
+          <Route path="/demo/fake-qr" element={<ForgeryDemoPage />} />
 
           {/* Resident Protected Routes */}
           <Route element={<ProtectedRoute requiredRole="resident" />}>

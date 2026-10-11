@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -8,7 +8,12 @@ import {
   Search,
   Lock,
   Key,
+  Camera,
+  QrCode,
+  X,
+  Upload,
 } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { certificateService } from '../services/certificateService';
 import type { VerificationResult } from '../types';
 import barangayLogo from '../assets/barangay-logo.png';
@@ -19,26 +24,52 @@ export const VerifyPage: React.FC = () => {
   const [inputQuery, setInputQuery] = useState('');
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-
-
   const [isLoading, setIsLoading] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Helper to extract clean hash or control number from raw input or URL
+  const extractCleanQuery = (raw: string): string => {
+    let clean = raw.trim();
+    if (clean.includes('/verify/')) {
+      clean = clean.split('/verify/').pop()?.split('?')[0].split('/')[0] || clean;
+    }
+    return decodeURIComponent(clean).trim();
+  };
 
   useEffect(() => {
     if (urlHash) {
-      setInputQuery(urlHash);
-      performVerification(urlHash);
+      const clean = extractCleanQuery(urlHash);
+      setInputQuery(clean);
+      performVerification(clean);
     }
   }, [urlHash]);
 
+  useEffect(() => {
+    return () => {
+      // Clean up camera stream on unmount
+      if (html5QrCodeRef.current) {
+        if (html5QrCodeRef.current.isScanning) {
+          html5QrCodeRef.current.stop().catch(() => {});
+        }
+        html5QrCodeRef.current.clear();
+      }
+    };
+  }, []);
+
   const performVerification = async (query: string) => {
-    if (!query.trim()) {
+    const clean = extractCleanQuery(query);
+    if (!clean) {
       toast.error('Please enter a SHA-256 Hash or Control Number.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await certificateService.verifyByHashOrControlNumberAsync(query);
+      const res = await certificateService.verifyByHashOrControlNumberAsync(clean);
       setResult(res);
       setHasSearched(true);
     } catch (err) {
@@ -54,8 +85,92 @@ export const VerifyPage: React.FC = () => {
     performVerification(inputQuery);
   };
 
+  // QR Camera Scanner Handlers
+  const startCameraScanner = async () => {
+    setIsScannerOpen(true);
+    setCameraLoading(true);
+
+    // Short timeout to ensure the DOM element #qr-reader is mounted
+    setTimeout(async () => {
+      try {
+        const qrElement = document.getElementById('qr-reader');
+        if (!qrElement) {
+          setCameraLoading(false);
+          return;
+        }
+
+        const scanner = new Html5Qrcode('qr-reader');
+        html5QrCodeRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 260, height: 260 },
+          },
+          (decodedText) => {
+            handleScannedResult(decodedText);
+          },
+          () => {
+            // Frame scan failure - normal while searching for QR
+          }
+        );
+        setCameraLoading(false);
+      } catch (err: any) {
+        console.error('Camera access exception:', err);
+        toast.error('Camera access failed. Please ensure camera permissions are allowed.');
+        setCameraLoading(false);
+        setIsScannerOpen(false);
+      }
+    }, 150);
+  };
+
+  const stopCameraScanner = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        if (html5QrCodeRef.current.isScanning) {
+          await html5QrCodeRef.current.stop();
+        }
+        html5QrCodeRef.current.clear();
+      } catch (e) {
+        console.warn('Scanner stop error:', e);
+      }
+      html5QrCodeRef.current = null;
+    }
+    setIsScannerOpen(false);
+    setCameraLoading(false);
+  };
+
+  const handleScannedResult = async (decodedText: string) => {
+    const clean = extractCleanQuery(decodedText);
+    await stopCameraScanner();
+    setInputQuery(clean);
+    toast.success('Certificate QR code detected!');
+    performVerification(clean);
+  };
+
+  // Scan from uploaded image file
+  const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const scanner = html5QrCodeRef.current || new Html5Qrcode('qr-reader-hidden');
+      const decodedText = await scanner.scanFile(file, true);
+      handleScannedResult(decodedText);
+    } catch (err) {
+      console.warn('File QR scan error:', err);
+      toast.error('No QR code detected in the selected image. Please try a clearer photo.');
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
+
   return (
     <div style={{ maxWidth: '960px', margin: '3rem auto', padding: '0 1.5rem' }}>
+      {/* Hidden container for file-based QR decoding */}
+      <div id="qr-reader-hidden" style={{ display: 'none' }} />
+
       {/* Verification Header */}
       <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
         <img
@@ -82,7 +197,7 @@ export const VerifyPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Input Search Box */}
+      {/* Input Search Box & Camera Scan Bar */}
       <div
         style={{
           background: '#FFFFFF',
@@ -94,9 +209,61 @@ export const VerifyPage: React.FC = () => {
         }}
       >
         <form onSubmit={handleSearch}>
-          <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#1E293B', marginBottom: '8px' }}>
-            Enter 64-Character SHA-256 Hash or Control Number (e.g. CG-TGR-2026-0001)
-          </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+            <label style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1E293B' }}>
+              Enter 64-Character SHA-256 Hash or Control Number (e.g. CG-TGR-2026-0001)
+            </label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={startCameraScanner}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#EFF6FF',
+                  color: '#0066FF',
+                  border: '1px solid #BFDBFE',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                <Camera size={15} />
+                <span>Scan with Camera</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#F8FAFC',
+                  color: '#475569',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <Upload size={15} />
+                <span>Upload QR Image</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleFileScan}
+              />
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
               <Search
@@ -108,7 +275,7 @@ export const VerifyPage: React.FC = () => {
                 type="text"
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
-                placeholder="Paste SHA-256 digital fingerprint or control number..."
+                placeholder="Paste SHA-256 digital fingerprint, control number, or scan QR..."
                 style={{
                   width: '100%',
                   padding: '12px 14px 12px 42px',
@@ -126,6 +293,67 @@ export const VerifyPage: React.FC = () => {
           </div>
         </form>
 
+        {/* Live Camera Viewfinder Overlay */}
+        {isScannerOpen && (
+          <div
+            style={{
+              marginTop: '1.5rem',
+              padding: '1.25rem',
+              background: '#0F172A',
+              borderRadius: '12px',
+              color: '#FFFFFF',
+              position: 'relative',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <QrCode size={20} color="#38BDF8" />
+                <span style={{ fontWeight: 700, fontSize: '0.92rem' }}>Align Certificate QR Code Within Frame</span>
+              </div>
+              <button
+                type="button"
+                onClick={stopCameraScanner}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {cameraLoading && (
+              <div style={{ padding: '2rem 0', color: '#94A3B8', fontSize: '0.88rem' }}>
+                Initializing camera feed...
+              </div>
+            )}
+
+            <div
+              id="qr-reader"
+              style={{
+                width: '100%',
+                maxWidth: '380px',
+                margin: '0 auto',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                background: '#000000',
+              }}
+            />
+
+            <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '10px' }}>
+              Point your phone camera directly at the QR code on the lower left of the official certificate.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Verification Result Output */}

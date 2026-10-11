@@ -14,9 +14,11 @@ import {
   ArrowRight,
   Building,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import barangayLogo from '../../assets/barangay-logo.png';
 
 export const AdminDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [, setTick] = React.useState(0);
 
   React.useEffect(() => {
@@ -31,6 +33,7 @@ export const AdminDashboard: React.FC = () => {
   const requests = storageService.getRequests();
   const pendingQueue = requests.filter((r) => r.status === 'pending').slice(0, 5);
   const recentCerts = storageService.getCertificates().slice(0, 5);
+  const secretaryName = user?.fullName || 'Maria Elena Santos';
 
   return (
     <div style={{ padding: '2rem 2.5rem' }}>
@@ -49,14 +52,19 @@ export const AdminDashboard: React.FC = () => {
             }}
           />
           <div>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0066FF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              EXECUTIVE CONTROL PANEL
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0066FF', textTransform: 'uppercase', letterSpacing: '0.08em', background: '#EFF6FF', padding: '3px 10px', borderRadius: '9999px', border: '1px solid #BFDBFE' }}>
+                OFFICE OF THE BARANGAY SECRETARY
+              </span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#059669', background: '#ECFDF5', padding: '3px 10px', borderRadius: '9999px', border: '1px solid #A7F3D0' }}>
+                Logged in: {secretaryName}
+              </span>
+            </div>
             <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F172A', margin: '2px 0 0' }}>
-              Barangay Taguranao Administration
+              Barangay Taguranao Secretary Portal
             </h1>
             <p style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '2px' }}>
-              Real-time monitoring of document processing, cryptographic verification, and resident registrations.
+              Official administrative desk for resident records, certificate approvals, and cryptographic verification ledger.
             </p>
           </div>
         </div>

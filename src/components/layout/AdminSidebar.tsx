@@ -34,10 +34,10 @@ export const AdminSidebar: React.FC = () => {
         />
         <div>
           <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0F172A' }}>
-            Taguranao Admin
+            Office of the Secretary
           </div>
           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0066FF' }}>
-            Executive Console
+            Secretary Portal
           </span>
         </div>
       </div>

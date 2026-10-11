@@ -166,7 +166,7 @@ export const LoginPage: React.FC = () => {
               borderRight: 'none',
             }}
           >
-            Barangay Staff / Admin
+            Barangay Secretary / Staff
           </button>
         </div>
 
@@ -232,7 +232,7 @@ export const LoginPage: React.FC = () => {
             className={roleTab === 'admin' ? 'btn-danger' : 'btn-primary'}
             style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}
           >
-            <span>{loading ? 'Authenticating...' : `Enter ${roleTab === 'admin' ? 'Staff Console' : 'Resident Portal'}`}</span>
+            <span>{loading ? 'Authenticating...' : `Enter ${roleTab === 'admin' ? 'Secretary Portal' : 'Resident Portal'}`}</span>
             <ArrowRight size={18} />
           </button>
 

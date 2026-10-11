@@ -429,6 +429,14 @@ export const supabaseDataService = {
       const { error } = await supabase.from('issued_certificates').upsert(dbPayload);
       if (error) {
         console.error('Supabase insertCertificate error:', error.message);
+        // Fallback retry if foreign key violation on releasing_staff_id occurs
+        if (error.code === '23503' || error.message.includes('releasing_staff_id')) {
+          console.warn('Retrying insertCertificate with releasing_staff_id: null');
+          const fallbackPayload: any = { ...dbPayload, releasing_staff_id: null };
+          const { error: retryErr } = await supabase.from('issued_certificates').upsert(fallbackPayload);
+          if (!retryErr) return true;
+          console.error('Fallback insertCertificate error:', retryErr.message);
+        }
         return false;
       }
       return true;
@@ -460,9 +468,14 @@ export const supabaseDataService = {
   async findCertificateByHashOrControl(query: string): Promise<IssuedCertificate | null> {
     if (!isSupabaseConfigured()) return null;
     try {
-      const clean = query.trim();
+      let clean = query.trim();
+      // If someone scanned or pasted a full verification URL, extract the query component
+      if (clean.includes('/verify/')) {
+        clean = clean.split('/verify/').pop()?.split('?')[0].split('/')[0] || clean;
+      }
+      clean = decodeURIComponent(clean).trim();
 
-      // Try exact match on hash_signature first
+      // 1. Try exact match on hash_signature first
       const { data: hashData, error: hashErr } = await supabase
         .from('issued_certificates')
         .select('*')
@@ -474,7 +487,19 @@ export const supabaseDataService = {
         return mapDbCertToApp(hashData);
       }
 
-      // Try exact match on control_number
+      // 2. Try case-insensitive match on hash_signature
+      const { data: hashIlikeData, error: hashIlikeErr } = await supabase
+        .from('issued_certificates')
+        .select('*')
+        .ilike('hash_signature', clean)
+        .maybeSingle();
+
+      if (!hashIlikeErr && hashIlikeData) {
+        console.log('[CertiGuard] Found certificate by ilike hash_signature in Supabase');
+        return mapDbCertToApp(hashIlikeData);
+      }
+
+      // 3. Try exact match on control_number
       const { data: ctrlData, error: ctrlErr } = await supabase
         .from('issued_certificates')
         .select('*')
@@ -486,7 +511,7 @@ export const supabaseDataService = {
         return mapDbCertToApp(ctrlData);
       }
 
-      // Try case-insensitive match as fallback
+      // 4. Try case-insensitive match on control_number
       const { data: iData, error: iErr } = await supabase
         .from('issued_certificates')
         .select('*')

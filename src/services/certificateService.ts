@@ -93,11 +93,14 @@ export const certificateService = {
     });
 
     const certId = `cert-${Date.now()}`;
+    const sessionUser = storageService.getSessionUser();
+    const releasingStaffId = sessionUser?.id || 'user-admin-01';
+
     const newCert: IssuedCertificate = {
       id: certId,
       requestId: request.id,
       controlNumber: request.controlNumber,
-      releasingStaffId: 'user-staff-01',
+      releasingStaffId,
       type: request.type,
       recipientName: request.applicantName,
       recipientAddress: request.applicantAddress,
@@ -177,7 +180,12 @@ export const certificateService = {
 
   // Synchronous verification for local checks
   verifyByHashOrControlNumber: (input: string): VerificationResult => {
-    const clean = input.trim();
+    let clean = input.trim();
+    if (clean.includes('/verify/')) {
+      clean = clean.split('/verify/').pop()?.split('?')[0].split('/')[0] || clean;
+    }
+    clean = decodeURIComponent(clean).trim();
+
     if (!clean) {
       return {
         verified: false,
@@ -201,12 +209,12 @@ export const certificateService = {
 
     // Verify cryptographic integrity
     const recomputedHash = hashService.generateSHA256({
-      controlNumber: cert.controlNumber,
-      type: cert.type,
-      recipientName: cert.recipientName,
-      purok: cert.purok,
-      purpose: cert.purpose,
-      issuedDate: cert.issuedDate,
+      controlNumber: (cert.controlNumber || '').trim(),
+      type: (cert.type || '').trim(),
+      recipientName: (cert.recipientName || '').trim(),
+      purok: (cert.purok || '').trim(),
+      purpose: (cert.purpose || '').trim(),
+      issuedDate: (cert.issuedDate || '').trim(),
     });
 
     const isTampered = recomputedHash.toLowerCase() !== cert.hashSignature.toLowerCase();
@@ -268,7 +276,12 @@ export const certificateService = {
    * Logs scan result into verification_logs table.
    */
   verifyByHashOrControlNumberAsync: async (input: string): Promise<VerificationResult> => {
-    const clean = input.trim();
+    let clean = input.trim();
+    if (clean.includes('/verify/')) {
+      clean = clean.split('/verify/').pop()?.split('?')[0].split('/')[0] || clean;
+    }
+    clean = decodeURIComponent(clean).trim();
+
     if (!clean) {
       return {
         verified: false,
@@ -297,12 +310,12 @@ export const certificateService = {
 
       // Verify cryptographic integrity
       const recomputedHash = hashService.generateSHA256({
-        controlNumber: cloudCert.controlNumber,
-        type: cloudCert.type,
-        recipientName: cloudCert.recipientName,
-        purok: cloudCert.purok,
-        purpose: cloudCert.purpose,
-        issuedDate: cloudCert.issuedDate,
+        controlNumber: (cloudCert.controlNumber || '').trim(),
+        type: (cloudCert.type || '').trim(),
+        recipientName: (cloudCert.recipientName || '').trim(),
+        purok: (cloudCert.purok || '').trim(),
+        purpose: (cloudCert.purpose || '').trim(),
+        issuedDate: (cloudCert.issuedDate || '').trim(),
       });
 
       const isTampered = recomputedHash.toLowerCase() !== cloudCert.hashSignature.toLowerCase();

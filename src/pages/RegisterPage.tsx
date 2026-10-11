@@ -270,52 +270,9 @@ export const RegisterPage: React.FC = () => {
                 style={{ display: 'none' }}
               />
             </label>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-              <p style={{ margin: 0, fontSize: '0.76rem', color: '#64748B', lineHeight: 1.45, flex: 1, minWidth: '240px' }}>
-                Upload a clear photo of your valid ID (PhilSys, Driver's License, UMID, Postal ID, Passport, etc.). It is visible only to authorized staff for residency verification.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
-                    <rect width="600" height="380" rx="16" fill="#1E293B"/>
-                    <rect x="20" y="20" width="560" height="340" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
-                    <rect x="20" y="20" width="560" height="70" rx="12" fill="#0038A8"/>
-                    <circle cx="60" cy="55" r="22" fill="#CE1126"/>
-                    <text x="95" y="48" fill="#FFFFFF" font-family="sans-serif" font-size="18" font-weight="bold">REPUBLIC OF THE PHILIPPINES</text>
-                    <text x="95" y="68" fill="#FCD34D" font-family="sans-serif" font-size="13" font-weight="bold">BARANGAY TAGURANAO RESIDENT ID CARD</text>
-                    <rect x="40" y="110" width="130" height="160" rx="8" fill="#E2E8F0" stroke="#94A3B8"/>
-                    <circle cx="105" cy="160" r="35" fill="#94A3B8"/>
-                    <path d="M65,240 C65,200 145,200 145,240 Z" fill="#94A3B8"/>
-                    <text x="190" y="130" fill="#64748B" font-family="sans-serif" font-size="12">FULL NAME / PANGALAN</text>
-                    <text x="190" y="152" fill="#0F172A" font-family="sans-serif" font-size="16" font-weight="bold">${formData.fullName || 'RESIDENT CITIZEN'}</text>
-                    <text x="190" y="185" fill="#64748B" font-family="sans-serif" font-size="12">ID NUMBER / CONTROL NO.</text>
-                    <text x="190" y="207" fill="#0038A8" font-family="sans-serif" font-size="15" font-weight="bold">PH-2026-REG-ID</text>
-                    <text x="190" y="240" fill="#64748B" font-family="sans-serif" font-size="12">VERIFICATION STATUS</text>
-                    <text x="190" y="262" fill="#059669" font-family="sans-serif" font-size="14" font-weight="bold">OFFICIAL RESIDENT ID</text>
-                    <rect x="40" y="295" width="520" height="45" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
-                    <text x="50" y="322" fill="#1E40AF" font-family="sans-serif" font-size="11">NOTICE: Official resident identification document for residency verification.</text>
-                  </svg>`;
-                  const blob = new Blob([svgData], { type: 'image/svg+xml' });
-                  const testFile = new File([blob], 'sample_resident_id.svg', { type: 'image/svg+xml' });
-                  setValidId(testFile);
-                  toast.success('Attached sample ID card!');
-                }}
-                style={{
-                  background: '#F1F5F9',
-                  border: '1px solid #CBD5E1',
-                  color: '#0F172A',
-                  padding: '5px 10px',
-                  borderRadius: '6px',
-                  fontSize: '0.74rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                ⚡ Use Sample Valid ID
-              </button>
-            </div>
+            <p style={{ margin: '6px 0 0 0', fontSize: '0.76rem', color: '#64748B', lineHeight: 1.45 }}>
+              Upload a clear photo of your valid ID (PhilSys, Driver's License, UMID, Postal ID, Passport, etc.). It is visible only to authorized staff for residency verification.
+            </p>
           </div>
 
           {/* Detailed Street Address */}

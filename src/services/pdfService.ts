@@ -72,8 +72,8 @@ export const pdfService = {
     doc.setFontSize(10);
     doc.setTextColor(50, 50, 50);
     doc.text('Republic of the Philippines', pageWidth / 2, 22, { align: 'center' });
-    doc.text('Province of Bukidnon / Region X', pageWidth / 2, 27, { align: 'center' });
-    doc.text('Municipality / City of Taguranao', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Province of Cotabato / Region XII', pageWidth / 2, 27, { align: 'center' });
+    doc.text('Municipality of Matalam', pageWidth / 2, 32, { align: 'center' });
 
     doc.setFont('times', 'bold');
     doc.setFontSize(14);

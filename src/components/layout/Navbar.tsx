@@ -150,7 +150,7 @@ export const Navbar: React.FC = () => {
                 }}
               >
                 <FileText size={15} />
-                {isAdmin ? 'Admin Portal' : 'My Requests'}
+                {isAdmin ? 'Secretary Portal' : 'My Requests'}
               </Link>
 
               <div
@@ -291,7 +291,7 @@ export const Navbar: React.FC = () => {
                   className="btn-primary"
                   style={{ textAlign: 'center', width: '100%', textDecoration: 'none' }}
                 >
-                  {isAdmin ? 'Go to Admin Console' : 'Go to Resident Portal'}
+                  {isAdmin ? 'Go to Secretary Portal' : 'Go to Resident Portal'}
                 </Link>
                 <button
                   onClick={() => {
